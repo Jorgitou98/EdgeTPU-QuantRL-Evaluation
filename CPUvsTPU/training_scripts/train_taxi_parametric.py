@@ -57,15 +57,17 @@ def get_config_depth_params(depth, params):
     agent = ppo.PPOTrainer(ppo.DEFAULT_CONFIG.copy(), env='Taxi-v3')
     input_dim = agent.get_policy().model.base_model.input_shape[1]
     config = ppo.DEFAULT_CONFIG.copy()
-    # En la primera capa queremos params/depth parámetros que vienen dados por input_dim * d1
-    d1 = int(params/(depth*input_dim)+1)
-    config['model']['fcnet_hiddens'] = [d1]
+
     # En las demás capas quueremos params/depth parámetros que vienen dados por dh * dh
     dh = math.isqrt(int(params/depth))
+    # Las primeras capas son input_dim * d1 + d1 * dh = d1 * (input_dim + dh) = 2 * (params/depth)
+    # Despejando se tiene:
+    d1 = int(2*params/(depth*(input_dim + dh)))
+    config['model']['fcnet_hiddens'] = [d1]
+
     for i in range(depth-1):
       config['model']['fcnet_hiddens'].append(dh)
     print(config['model']['fcnet_hiddens'])
-    input("Config...")
     return config
 
 def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = True, restore = False, restore_dir = None):
@@ -199,7 +201,7 @@ def main():
     print(args.total_params_file)
     with open(args.total_params_file, 'a', newline='') as f_object:
        writer_object = csv.writer(f_object)
-       writer_object.writerow([args.depth, args.neurons, int(policy.model.base_model.count_params()/2)])
+       writer_object.writerow([args.depth, args.neurons if args.neurons is not None else args.params, int(policy.model.base_model.count_params()/2), config['model']['fcnet_hiddens']])
        f_object.close()
 
     print("Configuracion del agente:\n\n" + str(config))

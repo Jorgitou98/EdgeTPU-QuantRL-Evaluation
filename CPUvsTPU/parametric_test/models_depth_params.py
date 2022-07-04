@@ -36,7 +36,7 @@ totalParamsFile = f'total_params/depth_params_pow[{args.mindepthpower}-{args.max
 
 with open(totalParamsFile, 'w', newline='') as outcsv:
   writer = csv.writer(outcsv)
-  writer.writerow(["DEPTH", "PARAMS", "REAL_TOTAL_PARAMS"])
+  writer.writerow(["DEPTH", "PARAMS", "MODEL_TOTAL_PARAMS", "CONFIG"])
 
 for depth in [2** pow for pow in range(args.mindepthpower, args.maxdepthpower+1, args.depthsteppower)]:
   for params in [2 ** pow for pow in range(args.minparamspower, args.maxparamspower+1, args.paramsteppower)]:

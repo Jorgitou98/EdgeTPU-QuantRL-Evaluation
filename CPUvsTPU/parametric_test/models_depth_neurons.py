@@ -33,7 +33,7 @@ args = parser.parse_args()
 
 with open(f'total_params/total_params[{args.mindepth}-{args.maxdepth}]-[{args.minneurons}-{args.maxneurons}].csv', 'w', newline='') as outcsv:
   writer = csv.writer(outcsv)
-  writer.writerow(["DEPTH", "NEURONS", "TOTAL_PARAMS"])
+  writer.writerow(["DEPTH", "NEURONS", "TOTAL_PARAMS", "CONFIG"])
 
 for depth in range(args.mindepth, args.maxdepth+1, args.depthstep):
   for neurons in range(args.minneurons, args.maxneurons+1, args.neuronsstep):
