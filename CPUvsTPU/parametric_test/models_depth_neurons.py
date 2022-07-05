@@ -50,8 +50,8 @@ for depth in range(args.mindepth, args.maxdepth+1, args.depthstep):
     process = subprocess.Popen(convert.split())
     output, error = process.communicate()
 
-    if not os.path.exists('datasets/dataset-model{}-{}.npy'.format(depth, neurons)):
-      create_dataset = 'python dataset_creator.py {} datasets/dataset-model{}-{}'.format(args.dim, depth, neurons)
+    if not os.path.exists('datasets/dataset-model_taxi.npy'):
+      create_dataset = 'python dataset_creator.py {} datasets/dataset-model_taxi'.format(args.dim)
       process = subprocess.Popen(create_dataset.split())
       output, error = process.communicate()
 

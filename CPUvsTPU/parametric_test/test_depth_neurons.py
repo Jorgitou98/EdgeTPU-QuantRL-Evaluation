@@ -1,6 +1,8 @@
 import argparse
 import subprocess
+import sys
 import os
+sys.path.append(os.path.join(sys.path[0], '..'))
 import rollout_tflite
 import rollout_edge_tpu
 import csv
@@ -42,12 +44,12 @@ parser.add_argument(
 args, unknown = parser.parse_known_args()
 batch = args.batch if args.batch != None else 100
 
-testFolder = 'testResults/depth-neurons/depth[{}-{}]-neurons[{}-{}]/'.format(args.mindepth, args.maxdepth, args.minneurons, args.maxneurons)
+testFolder = 'test_results/depth-neurons/depth[{}-{}]-neurons[{}-{}]/'.format(args.mindepth, args.maxdepth, args.minneurons, args.maxneurons)
 if not os.path.exists(testFolder):
   os.mkdir(testFolder)
 
 for num_tpus in num_tpus_list:
-  tpuResultFileName = 'testResults/depth-neurons/depth[{}-{}]-neurons[{}-{}]/{}tpus_results.csv'.format(args.mindepth, args.maxdepth, args.minneurons, args.maxneurons, num_tpus)
+  tpuResultFileName = 'test_results/depth-neurons/depth[{}-{}]-neurons[{}-{}]/{}tpus_results.csv'.format(args.mindepth, args.maxdepth, args.minneurons, args.maxneurons, num_tpus)
   with open(tpuResultFileName, "w") as csvout:
     writer = csv.writer(csvout)
     header = ["Depth"]
