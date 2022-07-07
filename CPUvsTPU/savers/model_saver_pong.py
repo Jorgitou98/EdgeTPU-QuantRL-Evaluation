@@ -14,7 +14,6 @@ checkpoint_dir=sys.argv[1]
 export_name = sys.argv[2]
 
 config = ppo.DEFAULT_CONFIG.copy()
-#print(config)
 
 config_dir = os.path.dirname(checkpoint_dir)
 config_path = os.path.join(config_dir, "params.pkl")
