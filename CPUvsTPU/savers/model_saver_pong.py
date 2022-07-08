@@ -29,8 +29,6 @@ config['explore'] = False
 agent = ppo.PPOTrainer(config, env='Pong-v0')
 agent.restore(checkpoint_dir)
 print(agent.get_policy().model.base_model.summary())
-print(checkpoint_dir, config_path)
-input("Press Enter...")
 
 if(os.path.exists(export_name)):
   shutil.rmtree(export_name)

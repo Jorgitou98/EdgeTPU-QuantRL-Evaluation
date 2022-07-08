@@ -34,6 +34,9 @@ parser.add_argument(
 parser.add_argument(
         '-d', '--dim', required = True, type=int, help= 'Input dimension'
 )
+parser.add_argument(
+        '-s', '--steps', type=int, default=10000, help='Number of times to run inference'
+)
 args = parser.parse_args()
 
 testFolderResult = f'test_results/depth-params/depth_pow[{args.mindepthpower}-{args.maxdepthpower}]-params_pow[{args.minparamspower}-{args.maxparamspower}]/'
@@ -57,8 +60,8 @@ with open(totalParamsFile, 'w', newline='') as outcsv:
 
 timeTPUout = open(tpuResultFileName, "w")
 timeCPUout = open(cpuResultFileName, "w")
-writerTPU = csv.writer(timeTPUout)
-writerCPU = csv.writer(timeCPUout)
+writerTPU = csv.writer(timeTPUout, quoting=csv.QUOTE_NONE)
+writerCPU = csv.writer(timeCPUout, quoting=csv.QUOTE_NONE)
 header = ["Depth"]
 for params in paramsRange:
   header.append(f"{params} params")
@@ -72,12 +75,12 @@ for depth in depthRange:
   resultCPU = [depth]
   for params in paramsRange:
 
-    train = f'python ../training_scripts/train_taxi_parametric.py --depth={depth} --params={params} --gpu=gpu0 --workers=1 --save-name=model{depth}-{params} --iters={args.iters} --total-params-file={totalParamsFile}'
+    train = f'python ../training_scripts/train_taxi_parametric.py --depth={depth} --params={params} --gpu=gpu0 --workers=1 --save-name=model_depth_params{depth}-{params} --iters={args.iters} --total-params-file={totalParamsFile}'
     process = subprocess.Popen(train.split())
     output, error = process.communicate()
 
     checkpointIndex = "0"*(6-len(str(args.iters)))+str(args.iters)
-    export = f'python ../savers/model_saver_taxi.py ../checkpoints/ppo/model{depth}-{params}/checkpoint_{checkpointIndex}/checkpoint-{args.iters} ../exported_models/depth-params/model{depth}-{params}/checkpoint-{args.iters}-model{depth}-{params}'
+    export = f'python ../savers/model_saver_taxi.py ../checkpoints/ppo/model_depth_params{depth}-{params}/checkpoint_{checkpointIndex}/checkpoint-{args.iters} ../exported_models/depth-params/model{depth}-{params}/checkpoint-{args.iters}-model{depth}-{params}'
     process = subprocess.Popen(export.split())
     output, error = process.communicate()
 
@@ -85,8 +88,8 @@ for depth in depthRange:
     process = subprocess.Popen(convert.split())
     output, error = process.communicate()
 
-    if not os.path.exists('datasets/dataset_taxi.npy'.format(depth, params)):
-      create_dataset = 'python datasets/dataset_creator.py {} datasets/dataset_taxi'.format(args.dim, depth, params)
+    if not os.path.exists(f'datasets/dataset_taxi.npy'):
+      create_dataset = f'python datasets/dataset_creator.py {args.dim} datasets/dataset_taxi Taxi-v3'
       process = subprocess.Popen(create_dataset.split())
       output, error = process.communicate()
 
@@ -107,17 +110,33 @@ for depth in depthRange:
     process = subprocess.Popen(clear_log.split())
     output, error = process.communicate()
 
+    # Inference on CPU and TPU
+
     modelTPU = f'../exported_models/depth-params/model{depth}-{params}/checkpoint-1-model{depth}-{params}-quant8_edgetpu.tflite'
-    timeTPU = rollout_edge_tpu.main(batch = 1, num_tpus = 1, model=modelTPU, env_name="Taxi-v3")
+    timeTPU = rollout_edge_tpu.main(batch = 1, num_tpus = 1, model=modelTPU, env_name="Taxi-v3", steps = args.steps)
     resultTPU.append(timeTPU)
-    #print(timeTPU)
-    #input("Continuar...")
 
     modelCPU = f'../exported_models/depth-params/model{depth}-{params}/checkpoint-1-model{depth}-{params}.tflite'
-    timeCPU = rollout_tflite.main(batch = 1, threads = 1, model=modelCPU, env_name="Taxi-v3")
+    timeCPU = rollout_tflite.main(batch = 1, threads = 1, model=modelCPU, env_name="Taxi-v3", steps = args.steps)
     resultCPU.append(timeCPU)
-    #print(timeTPU)
-    #input("Continuar...")
+
+    # Remove generated files
+
+    rm_training_results = f'rm ../training_results/ppo/model{depth}-{params}.csv ../training_results/ppo/model{depth}-{params}.json'
+    process = subprocess.Popen(rm_training_results.split())
+    process.communicate()
+
+    rm_checkpoints = f'rm -r ../checkpoints/ppo/model{depth}-{params}/'
+    process = subprocess.Popen(rm_checkpoints.split())
+    process.communicate()
+
+    rm_models = f'rm -r ../exported_models/depth-params/model{depth}-{params}/'
+    process = subprocess.Popen(rm_models.split())
+    process.communicate()
+
+    rm_ray_results = f'rm -r ray_results/model{depth}-{params}/'
+    process = subprocess.Popen(rm_ray_results.split())
+    process.communicate()
 
   writerTPU.writerow(resultTPU)
   writerCPU.writerow(resultCPU)

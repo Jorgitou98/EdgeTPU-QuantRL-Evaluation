@@ -32,7 +32,7 @@ def keep_going(steps, num_steps, episodes, num_episodes):
 def invoke(interpreter):
   interpreter.invoke()
 
-def main(batch = None, num_tpus = None, model = None, env_name="Pong-v0"):
+def main(batch = 1, num_tpus = 1, model = None, env_name="Pong-v0", steps = None):
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument(
@@ -55,11 +55,10 @@ def main(batch = None, num_tpus = None, model = None, env_name="Pong-v0"):
       help= 'Size of batch for parallel inference')
   args, unknown = parser.parse_known_args()
 
-  num_steps = int(args.steps)
+  num_steps = steps if steps is not None else args.steps
   num_episodes = int(args.episodes)
-  num_tpus = num_tpus if num_tpus != None else 1
-  batch_size = int(batch/num_tpus) if batch != None else int(args.batch)
-  model_tpu = model if model != None else args.modeltpu
+  batch_size = int(batch/num_tpus) if batch != 1 else 1
+  model_tpu = model if model is not None else args.modeltpu
   print("Batch size", batch_size)
 
   batches_sizes = [batch_size for i in range(num_tpus)]
@@ -90,14 +89,14 @@ def main(batch = None, num_tpus = None, model = None, env_name="Pong-v0"):
   # Get image dim
   print('Input dim:', input_details[0]['shape'])
 
-  #input("Continue Enter...")
-
 
   # Get image dim
   dim = input_details[0]['shape'][1]
 
+  env = wrappers.wrap_deepmind(gym.make(env_name), dim = dim)
+
   # Create env
-  env = gym.make(env_name)
+  #env = gym.make(env_name)
 
   prep = get_preprocessor(env.observation_space)(env.observation_space)
 
@@ -116,26 +115,25 @@ def main(batch = None, num_tpus = None, model = None, env_name="Pong-v0"):
   time_steps = 0
   while keep_going(steps, num_steps, episodes, num_episodes):
     image = env.reset()
-
     image = prep.transform(image)
-
     done = False
     steps_this_episode = 0
-    #image = image[np.newaxis, ...]
 
     print(input_details[0]['dtype'])
     if input_details[0]['dtype'] == np.float32:
-        image=np.float32(image)
+      image=np.float32(image)
     if input_details[0]['dtype'] == np.uint8:
       image=np.uint8(image)
 
     for num_interpreter in range(num_tpus):
       batch = [image for i in range(batches_sizes[num_interpreter])]
+      print(image.shape)
       interpreters_list[num_interpreter].set_tensor(input_details[0]['index'], batch)
+      #input("Continue")
 
     this_step = 0
     reward_episode = 0
-    while not done and keep_going(steps, args.steps, episodes, args.episodes):
+    while not done and keep_going(steps, num_steps, episodes, args.episodes):
 
       #env.render()
 
@@ -176,9 +174,6 @@ def main(batch = None, num_tpus = None, model = None, env_name="Pong-v0"):
 
       image = prep.transform(image)
 
-      # Place new image as the new model's input
-
-      #image = image[np.newaxis, ...]
 
       if input_details[0]['dtype'] == np.float32:
         image=np.float32(image)

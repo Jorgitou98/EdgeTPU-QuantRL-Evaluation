@@ -17,12 +17,10 @@ import threading
 
 from statistics import mean
 import csv
-import sys
 
 
-def make_interpreter(model_file, num_threads):
-  return tflite.Interpreter(model_path=model_file, num_threads=num_threads)
-  #return tflite.Interpreter(model_path=model_file)
+def make_interpreter(model_file, threads):
+  return tflite.Interpreter(model_path=model_file, num_threads=threads)
 
 def keep_going(steps, num_steps, episodes, num_episodes):
   if num_episodes:
@@ -34,9 +32,7 @@ def keep_going(steps, num_steps, episodes, num_episodes):
 def invoke(interpreter):
   interpreter.invoke()
 
-
-
-def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
+def main(batch = 1, num_threads = 1, model = None, env_name="Pong-v0", steps = None):
   parser = argparse.ArgumentParser(
       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument(
@@ -55,34 +51,27 @@ def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
       '-o', '--output', default = None,
       help= 'CSV file to store timing results')
   parser.add_argument(
-      '-b', '--batch', type = int, default = 1,
+      '-b', '--batch', default = 1,
       help= 'Size of batch for parallel inference')
-  parser.add_argument(
-      '-t', '--threads', type = int, default = 1,
-      help= 'Limit for number of threads')
   args, unknown = parser.parse_known_args()
 
-  num_steps = int(args.steps)
+  num_steps = steps if steps is not None else args.steps
   num_episodes = int(args.episodes)
-  num_threads = threads if threads != None else args.threads
-  batch_size = int(batch/num_threads) if batch != None else args.batch
-  model_cpu = model if model != None else args.modelcpu
-
+  batch_size = int(batch/num_threads) if batch != 1 else 1
+  model_cpu = model if model is not None else args.modelcpu
+  print("Batch size", batch_size)
 
   batches_sizes = [batch_size for i in range(num_threads)]
   for i in range(batch - batch_size * num_threads):
     batches_sizes[i] += 1
 
-
   ## Getting distrib
-  trainer = PPOTrainer(env=env_name, config={"framework": "tf2", "num_workers": 0})
+  trainer = PPOTrainer(env = env_name, config={"framework": "tf2", "num_workers": 0})
   policy = trainer.get_policy()
   dist_class = policy.dist_class
-  print(dist_class)
+  #print(dist_class)
 
-  print(batches_sizes)
-
-  # Create TFLite interpreters
+  # Create TFLite interpreter
   interpreters_list = []
   for num_interpreter in range(num_threads):
         interpreters_list.append(make_interpreter(model_cpu, 1))
@@ -100,21 +89,20 @@ def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
   # Get image dim
   print('Input dim:', input_details[0]['shape'])
 
-  #input("Continue Enter...")
-
 
   # Get image dim
   dim = input_details[0]['shape'][1]
 
+  env = wrappers.wrap_deepmind(gym.make(env_name), dim = dim)
 
   # Create env
-  env = gym.make(env_name)
+  #env = gym.make(env_name)
 
   prep = get_preprocessor(env.observation_space)(env.observation_space)
 
   print('----INFERENCE TIME----')
-  print('Note: The first inference on Edge TPU is slow because it includes',
-        'loading the model into Edge TPU memory.')
+  print('Note: The first inference on Edge cpu is slow because it includes',
+        'loading the model into Edge cpu memory.')
 
   timing_results=[]
 
@@ -127,28 +115,27 @@ def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
   time_steps = 0
   while keep_going(steps, num_steps, episodes, num_episodes):
     image = env.reset()
-
     image = prep.transform(image)
-
     done = False
     steps_this_episode = 0
-    #image = image[np.newaxis, ...]
 
     print(input_details[0]['dtype'])
     if input_details[0]['dtype'] == np.float32:
       image=np.float32(image)
     if input_details[0]['dtype'] == np.uint8:
       image=np.uint8(image)
-    print("num threads", num_threads)
+
     for num_interpreter in range(num_threads):
       batch = [image for i in range(batches_sizes[num_interpreter])]
+      print(image.shape)
       interpreters_list[num_interpreter].set_tensor(input_details[0]['index'], batch)
+      #input("Continue")
 
     this_step = 0
     reward_episode = 0
-    while not done and keep_going(steps, args.steps, episodes, args.episodes):
+    while not done and keep_going(steps, num_steps, episodes, args.episodes):
 
-      env.render()
+      #env.render()
 
       #input("Press to continue...")
 
@@ -158,6 +145,7 @@ def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
         threads_list.append(threading.Thread(target=invoke, args= (interpreters_list[num_interpreter],)))
 
       start = time.perf_counter()
+      #interpreter.invoke()
       for thread in threads_list:
         thread.start()
       for thread in threads_list:
@@ -171,6 +159,7 @@ def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
       for num_interpreter in range(num_threads):
         output_data = interpreters_list[num_interpreter].get_tensor(output_details[0]['index'])
         print('Output dim {} :'.format(num_interpreter), output_data.shape)
+        #print('output data {}:'.format(num_interpreter), output_data)
 
       #dist = policy.dist_class(output_data, policy.model)
       #action = int(dist.sample())
@@ -185,9 +174,6 @@ def main(batch = None, threads = None, model=None, env_name="Pong-v0"):
 
       image = prep.transform(image)
 
-      # Place new image as the new model's input
-
-      #image = image[np.newaxis, ...]
 
       if input_details[0]['dtype'] == np.float32:
         image=np.float32(image)

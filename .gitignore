@@ -3,3 +3,4 @@
 **/ray_results/**
 **/training_results/**
 **/datasets/**
+**/__pycache__/**
