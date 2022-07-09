@@ -40,35 +40,11 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-# Ranges for parameters
-depthRange = range(args.mindepth, args.maxdepth+1, args.depthstep)
-filtersRange = range(args.minfilters, args.maxfilters+1, args.filtersstep)
 
-# Naming files
-
-testFolderResult = f'test_results/depth-filters/depth[{args.minfilters}-{args.maxfilters}]-filters[{args.minfilters}-{args.maxfilters}]/'
-
-if not os.path.exists(testFolderResult):
-  os.mkdir(testFolderResult)
-
-tpuResultFileName = f'{testFolderResult}tpu_results.csv'
-cpuResultFileName = f'{testFolderResult}cpu_results.csv'
-
-
-# Create file headers
-
-timeTPUout = open(tpuResultFileName, "w")
-timeCPUout = open(cpuResultFileName, "w")
-writerTPU = csv.writer(timeTPUout, quoting=csv.QUOTE_NONE)
-writerCPU = csv.writer(timeCPUout, quoting=csv.QUOTE_NONE)
-header = ["Depth"]
-for filters in filtersRange:
-  header.append(f"{filters} filters")
-writerTPU.writerow(header)
-writerCPU.writerow(header)
-
-for depth in depthRange:
-  for filters in filtersRange:
+for depth in range(args.mindepth, args.maxdepth+1, args.depthstep):
+  resultTPU = [depth]
+  resultCPU = [depth]
+  for filters in range(args.minfilters, args.maxfilters+1, args.filtersstep):
 
     train = f'python ../training_scripts/train_pong_parametric.py --depth={depth} --filters={filters} --gpu=gpu0 --workers=1 --save-name=model_depth_filters{depth}-{filters} --iters={args.iters}'
     process = subprocess.Popen(train.split())
@@ -131,18 +107,7 @@ for depth in depthRange:
     process = subprocess.Popen(rm_ray_results.split())
     process.communicate()
 
-
-for depth in depthRange:
-  resultTPU = [depth]
-  resultCPU = [depth]
-  for filters in filtersRange:
-    modelTPU = f'../exported_models/depth-filters/model{depth}-{filters}/checkpoint-1-model{depth}-{filters}-quant8_edgetpu.tflite'
-    timeTPU = rollout_edge_tpu.main(batch = 1, num_tpus = 1, model=modelTPU, env_name="Pong-v0", steps = args.steps)
-    resultTPU.append(timeTPU)
-
-    modelCPU = f'../exported_models/depth-filters/model{depth}-{filters}/checkpoint-1-model{depth}-{filters}.tflite'
-    timeCPU = rollout_tflite.main(batch = 1, num_threads = 1, model=modelCPU, env_name="Pong-v0", steps = args.steps)
-    resultCPU.append(timeCPU)
+    input("Continue")
 
   writerTPU.writerow(resultTPU)
   writerCPU.writerow(resultCPU)
