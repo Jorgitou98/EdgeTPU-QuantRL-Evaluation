@@ -42,8 +42,8 @@ def gpu_options(gpu_opt):
 
 def get_config_depth_filters(depth, filters):
     # La última capa está determinado cuál tiene que ser
-    filters_per_layer = int((filters-1)/depth)
-    filters_remainder = (filters-1) % depth
+    filters_per_layer = int((filters-1)/(depth-1))
+    filters_remainder = (filters-1) % (depth-1)
     config = ppo.DEFAULT_CONFIG.copy()
     config['model']['dim'] = 84
     config['model']['conv_filters'] = []
