@@ -79,8 +79,6 @@ def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = Tr
             print("Error: you must specify a restore path")
             return
         agent.restore(restore_dir)
-    #else:
-        #shutil.rmtree(checkpoint_root, ignore_errors=True, onerror=None)
     results = []
     episode_data = []
     episode_json = []
@@ -102,8 +100,9 @@ def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = Tr
                    }
         episode_data.append(episode)
         episode_json.append(json.dumps(episode))
-        # Save checkpoint after training
-        file_name = agent.save(checkpoint_root)
+        # Save checkpoint after training every 100 iters
+        if n % 50 == 0:
+          file_name = agent.save(checkpoint_root)
         print(s.format(
         n_ini + n + 1,
         result["episode_reward_min"],
@@ -196,7 +195,7 @@ def main():
     if args.restore_dir is not None:
         # restore dir has format checkpoints/ppo/model.../checkpoint_X/checkpoint-X 
         # and we set as n_ini the value of X
-        n_ini=args.restore_dir.split('/')[len(args.restore_dir.split('/'))-1].split('-')[1]
+        n_ini=int(args.restore_dir.split('/')[len(args.restore_dir.split('/'))-1].split('-')[1])
         t0 = time.time()
         full_train(checkpoint_root, agent, args.iters, save_file, n_ini = n_ini, header=False, restore = True, restore_dir=args.restore_dir)
         t1 = time.time()-t0

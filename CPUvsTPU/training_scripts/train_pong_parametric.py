@@ -181,7 +181,7 @@ def main():
     if args.restore_dir is not None:
         # restore dir has format checkpoints/ppo/model.../checkpoint_X/checkpoint-X 
         # and we set as n_ini the value of X
-        n_ini=args.restore_dir.split('/')[len(args.restore_dir.split('/'))-1].split('-')[1]
+        n_ini=int(args.restore_dir.split('/')[len(args.restore_dir.split('/'))-1].split('-')[1])
         t0 = time.time()
         full_train(checkpoint_root, agent, args.iters, save_file, n_ini = n_ini, header=False, restore = True, restore_dir=args.restore_dir)
         t1 = time.time()-t0
