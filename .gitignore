@@ -4,3 +4,4 @@
 **/CPUvsTPU/training_results/**
 **/datasets/**
 **/__pycache__/**
+**/compile_info/**

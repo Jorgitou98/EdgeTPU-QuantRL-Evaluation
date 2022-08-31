@@ -1,0 +1,8 @@
+Edge TPU Compiler version 16.0.384591198
+Input: CONV_linear_MACs/N33-nMACs43794432_quant.tflite
+Output: CONV_linear_MACs/N33-nMACs43794432_quant_edgetpu.tflite
+
+Operator                       Count      Status
+
+QUANTIZE                       1          Operation is otherwise supported, but not mapped due to some unspecified limitation
+CONV_2D                        2          Mapped to Edge TPU

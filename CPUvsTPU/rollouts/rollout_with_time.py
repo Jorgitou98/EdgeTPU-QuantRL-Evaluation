@@ -341,6 +341,8 @@ def run(args, parser):
 
     # Create the Trainer from config.
     cls = get_trainable_cls(args.run)
+    if 'record_env' in config : del config['record_env']
+    if 'vf_share_layers' in config : del config['vf_share_layers']
     agent = cls(env=args.env, config=config)
     # Load state from checkpoint.
     agent.restore(args.checkpoint)

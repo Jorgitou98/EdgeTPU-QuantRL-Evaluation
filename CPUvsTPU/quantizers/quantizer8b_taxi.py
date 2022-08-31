@@ -20,7 +20,7 @@ converter.optimizations = [tf.lite.Optimize.DEFAULT]
 converter.representative_dataset = representative_data_gen
 converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
 #converter.inference_input_type = tf.uint8
-converter.inference_output_type = tf.uint8
+converter.inference_output_type = tf.int8
 tflite_model_quant= converter.convert()
 
 interpreter = tf.lite.Interpreter(model_content=tflite_model_quant)

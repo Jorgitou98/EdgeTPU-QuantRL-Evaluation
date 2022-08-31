@@ -1,0 +1,3 @@
+Hidden neurons,# MACs,On chip mem used,Off chip mem used,Inference time
+2,13844,0.443359375,0.0,0.15387815252250556
+102,706044,0.871337890625,0.0,0.15698851333284863
