@@ -25,8 +25,8 @@ def execute(model_path, steps=2):
     #print("Output shape:", interpreter.get_tensor(output_details['index']).shape)
     if i == 0:
       continue
-    total_time_ms += inference_time
+    #total_time_ms += inference_time
     print("Inference time:", inference_time)
     times.append(inference_time)
-  return total_time_ms/(steps-1)
-  #return statistics.median(times)
+  #return total_time_ms/(steps-1)
+  return statistics.median(times)
