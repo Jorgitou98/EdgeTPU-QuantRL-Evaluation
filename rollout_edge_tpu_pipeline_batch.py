@@ -6,6 +6,7 @@ import statistics
 import tensorflow as tf
 import pycoral.pipeline.pipelined_model_runner as pipeline
 from pycoral.adapters import common
+import threading
 
 def make_runner(model_prefix, num_interpreters):
   interpreters = [tflite.Interpreter(model_path=model_prefix + f"_segment_{num_dev}_of_{num_interpreters}_edgetpu.tflite",
@@ -25,23 +26,26 @@ def execute(model_prefix, num_segments, steps=2):
   print("Name:", name)
   print("Input shape:", input_shape)
 
-  #input_val = tf.constant(1., shape=input_shape)
   input_val = np.full(input_shape, 1., dtype = np.float32)
   print(type(input_val))
-  #input("continuar")
-  total_time_ms = 0
-  times = []
-  for i in range(steps):
-    start = time.perf_counter()
-    #print(input_val.dtype)
-    runner.push({name: input_val})
-    output_val = runner.pop()
-    inference_time = (time.perf_counter() - start) * 1000
-    print("Output shape:", np.array(list(output_val.values())).shape)
-    if i == 0:
-      continue
-    #total_time_ms += inference_time
-    print("Inference time:", inference_time)
-    times.append(inference_time)
-  #return total_time_ms/(steps-1)
-  return statistics.median(times)
+
+  def producer():
+    for _ in range(steps):
+      runner.push({name: input_val})
+    runner.push({})
+
+  def consumer():
+    while True:
+      result = runner.pop()
+      if not result:
+        break
+
+  start = time.perf_counter()
+  producer_thread = threading.Thread(target=producer)
+  consumer_thread = threading.Thread(target=consumer)
+  producer_thread.start()
+  consumer_thread.start()
+  producer_thread.join()
+  consumer_thread.join()
+  average_time_ms = (time.perf_counter() - start) / steps * 1000
+  return average_time_ms
