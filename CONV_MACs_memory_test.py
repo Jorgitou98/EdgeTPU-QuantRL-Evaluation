@@ -68,7 +68,7 @@ parser.add_argument('--maxF', type=int, default=2025, help='Maximum number of fi
 parser.add_argument('--stepF', type=int, default=100, help='Step number of filters for de experiment')
 parser.add_argument('--steps', type=int, default=100, help='Step per inference')
 parser.add_argument('--segments-list', nargs='+', type=int, default=1, help='List with number of segments for test.')
-parser.add_argument('--use-batch', type=bool, default=False, help='Boolean marking if use batch for TPUs pipeline execution.')
+parser.add_argument('--batch-size', type=int, default=1, help='Batch size for execution execution.')
 args = parser.parse_args()
 
 minF = args.minF
@@ -76,7 +76,7 @@ maxF = args.maxF
 stepF = args.stepF
 steps = args.steps
 segments_list = args.segments_list
-use_batch = args.use_batch
+batch_size = args.batch_size
 
 def test_edge_tpu(model_file_prefix, num_segments):
     orig_stdout = os.dup(sys.stdout.fileno())
@@ -86,20 +86,21 @@ def test_edge_tpu(model_file_prefix, num_segments):
     subprocess.Popen(edge_tpu.split()).communicate()
     os.dup2(orig_stdout, sys.stdout.fileno())
     f.close()
+    if num_segments > 1 and not os.path.exists(f"{model_file_prefix}_quant_segment_0_of_{num_segments}_edgetpu.tflite"):
+      return (None, None, None)
 
     on_chip_mems_MB = memory_use(line_init="On-chip memory used for caching model parameters:", num_segments=num_segments)
     off_chip_mems_MB = memory_use(line_init="Off-chip memory used for streaming uncached model parameters:", num_segments=num_segments)
-    if num_segments == 1:
-      inf_time = rollout_edge_tpu_basic.execute(model_path=f"{model_file_prefix}_quant_edgetpu.tflite", steps = steps)
-    elif use_batch:
-      inf_time = rollout_edge_tpu_pipeline_batch.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps)
-    else:
-      inf_time = rollout_edge_tpu_pipeline_basic.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps)
+    #if num_segments == 1:
+      #inf_time = rollout_edge_tpu_basic.execute(model_path=f"{model_file_prefix}_quant_edgetpu.tflite", steps = steps)
+    #else:
+      #inf_time = rollout_edge_tpu_pipeline_basic.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps)
+    inf_time = rollout_edge_tpu_pipeline_batch.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps, batch_size = batch_size)
     print(f"Inference time {num_segments} segments:", inf_time)
     return (inf_time, on_chip_mems_MB, off_chip_mems_MB)
 
 for num_segments in segments_list:
-  csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}.csv", "w")
+  csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-batch{batch_size}.csv", "w")
   writer_results = csv.writer(csv_results, delimiter=',')
   writer_results.writerow(["Num filters", "# MACs", "On chip mem used", "Off chip mem used", "Inference time"])
   csv_results.close()
@@ -132,7 +133,7 @@ for num_filters in range(minF, maxF+1, stepF):
       inf_time, on_chip_mem_MB, off_chip_mem_MB = test_edge_tpu(model_file_prefix=model_file_prefix, num_segments=num_segments)
       print(inf_time, on_chip_mem_MB, off_chip_mem_MB)
       #input("continuar")
-      csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}.csv", "a")
+      csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-batch{batch_size}.csv", "a")
       writer_results = csv.writer(csv_results, delimiter=',')
       writer_results.writerow([num_filters, num_MACs, on_chip_mem_MB, off_chip_mem_MB, inf_time])
 csv_results.close()

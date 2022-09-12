@@ -1,0 +1,2 @@
+Num filters,# MACs,On chip mem used,Off chip mem used,Inference time
+32,160432128,"[0.020751953125, 0.05419921875]","[0.0, 0.0]",2.3310917895287275
