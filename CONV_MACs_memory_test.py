@@ -69,6 +69,8 @@ parser.add_argument('--stepF', type=int, default=100, help='Step number of filte
 parser.add_argument('--steps', type=int, default=100, help='Step per inference')
 parser.add_argument('--segments-list', nargs='+', type=int, default=1, help='List with number of segments for test.')
 parser.add_argument('--batch-size', type=int, default=1, help='Batch size for execution execution.')
+parser.add_argument('--profile-partition', type=bool, default=False, help='Flag for pipeline segmentation using profiling')
+parser.add_argument('--profiling-diff-threshold', type=int, default=500000, help='Threshold between the slowest and fastest segment in ns')
 args = parser.parse_args()
 
 minF = args.minF
@@ -77,20 +79,24 @@ stepF = args.stepF
 steps = args.steps
 segments_list = args.segments_list
 batch_size = args.batch_size
+profile_partition = args.profile_partition
+profiling_diff_threshold = args.profiling_diff_threshold
 
 def test_edge_tpu(model_file_prefix, num_segments):
     orig_stdout = os.dup(sys.stdout.fileno())
     f = open(f"CONV_MACs/compile_info/compiler_aux", 'w')
     os.dup2(f.fileno(), sys.stdout.fileno())
     edge_tpu = f'edgetpu_compiler --num_segments {num_segments} -o CONV_MACs/ {model_file_prefix}_quant.tflite'
+    if profile_partition:
+      edge_tpu = f'./libcoral/out/k8/tools/partitioner/partition_with_profiling --edgetpu_compiler_binary /usr/bin/edgetpu_compiler --model_path {model_file_prefix}_quant.tflite --num_segments {num_segments} --diff_threshold_ns {profiling_diff_threshold} --output_dir CONV_MACs/'
     subprocess.Popen(edge_tpu.split()).communicate()
     os.dup2(orig_stdout, sys.stdout.fileno())
     f.close()
     if num_segments > 1 and not os.path.exists(f"{model_file_prefix}_quant_segment_0_of_{num_segments}_edgetpu.tflite"):
       return (None, None, None)
 
-    on_chip_mems_MB = memory_use(line_init="On-chip memory used for caching model parameters:", num_segments=num_segments)
-    off_chip_mems_MB = memory_use(line_init="Off-chip memory used for streaming uncached model parameters:", num_segments=num_segments)
+    on_chip_mems_MB = memory_use(line_init="On-chip memory used for caching model parameters:", num_segments=num_segments)[-num_segments:]
+    off_chip_mems_MB = memory_use(line_init="Off-chip memory used for streaming uncached model parameters:", num_segments=num_segments)[-num_segments:]
     #if num_segments == 1:
       #inf_time = rollout_edge_tpu_basic.execute(model_path=f"{model_file_prefix}_quant_edgetpu.tflite", steps = steps)
     #else:
@@ -99,8 +105,9 @@ def test_edge_tpu(model_file_prefix, num_segments):
     print(f"Inference time {num_segments} segments:", inf_time)
     return (inf_time, on_chip_mems_MB, off_chip_mems_MB)
 
+
 for num_segments in segments_list:
-  csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-batch{batch_size}.csv", "w")
+  csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-batch{batch_size}-profiling{profile_partition}.csv", "w")
   writer_results = csv.writer(csv_results, delimiter=',')
   writer_results.writerow(["Num filters", "# MACs", "On chip mem used", "Off chip mem used", "Inference time"])
   csv_results.close()
@@ -133,7 +140,7 @@ for num_filters in range(minF, maxF+1, stepF):
       inf_time, on_chip_mem_MB, off_chip_mem_MB = test_edge_tpu(model_file_prefix=model_file_prefix, num_segments=num_segments)
       print(inf_time, on_chip_mem_MB, off_chip_mem_MB)
       #input("continuar")
-      csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-batch{batch_size}.csv", "a")
+      csv_results = open(f"CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-batch{batch_size}-profiling{profile_partition}.csv", "a")
       writer_results = csv.writer(csv_results, delimiter=',')
       writer_results.writerow([num_filters, num_MACs, on_chip_mem_MB, off_chip_mem_MB, inf_time])
 csv_results.close()
