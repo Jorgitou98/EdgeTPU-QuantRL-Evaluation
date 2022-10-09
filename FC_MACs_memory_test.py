@@ -72,12 +72,12 @@ writer_results = csv.writer(csv_results, delimiter=',')
 writer_results.writerow(["Hidden neurons", "# MACs", "On chip mem used", "Off chip mem used", "Inference time"])
 
 for hidden_neurons in range(minN, maxN+1, stepN):
-    num_MACs = hidden_neurons * (input_size + output_size) + (L-1) * output_size
+    num_MACs = hidden_neurons * (input_size + output_size + L * hidden_neurons)
     print("num_MACs:", num_MACs, "hidden_neurons:", hidden_neurons, "input_size:", input_size, "output_size:", output_size)
     model = Sequential()
     model.add(layers.Dense(hidden_neurons, input_shape=(input_size,), activation='tanh', use_bias=True,bias_initializer='zeros'))
     for _ in range(L-1):
-      model.add(layers.Dense(output_size, activation='tanh', use_bias=True,bias_initializer='zeros'))
+      model.add(layers.Dense(hidden_neurons, activation='tanh', use_bias=True,bias_initializer='zeros'))
     model.add(layers.Dense(output_size, use_bias=True, bias_initializer='zeros'))
 
     model_file_prefix = f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}"
@@ -94,7 +94,7 @@ for hidden_neurons in range(minN, maxN+1, stepN):
     orig_stdout = os.dup(sys.stdout.fileno())
     f = open(f"FC_MACs/compile_info/N{hidden_neurons}-nMACs{num_MACs}_compiler", 'w')
     os.dup2(f.fileno(), sys.stdout.fileno())
-    edge_tpu = f'edgetpu_compiler -o {model_file_prefix} {model_file_prefix}_quant.tflite'
+    edge_tpu = f'edgetpu_compiler -o FC_MACs {model_file_prefix}_quant.tflite'
     subprocess.Popen(edge_tpu.split()).communicate()
     os.dup2(orig_stdout, sys.stdout.fileno())
     f.close()

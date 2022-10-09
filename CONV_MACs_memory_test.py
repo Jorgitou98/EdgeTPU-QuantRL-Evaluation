@@ -67,6 +67,7 @@ parser.add_argument('--minF', type=int, default=2, help='Minimum number of filte
 parser.add_argument('--maxF', type=int, default=2025, help='Maximum number of filters for de experiment')
 parser.add_argument('--stepF', type=int, default=100, help='Step number of filters for de experiment')
 parser.add_argument('--steps', type=int, default=100, help='Step per inference')
+parser.add_argument('--layers', type=int, default=5, help='Number of convolutional layers.')
 parser.add_argument('--segments-list', nargs='+', type=int, default=1, help='List with number of segments for test.')
 parser.add_argument('--batch-size', type=int, default=1, help='Batch size for execution execution.')
 parser.add_argument('--profile-partition', type=bool, default=False, help='Flag for pipeline segmentation using profiling')
@@ -77,6 +78,7 @@ minF = args.minF
 maxF = args.maxF
 stepF = args.stepF
 steps = args.steps
+L = args.layers
 segments_list = args.segments_list
 batch_size = args.batch_size
 profile_partition = args.profile_partition
@@ -114,14 +116,12 @@ for num_segments in segments_list:
 
 for num_filters in range(minF, maxF+1, stepF):
     # w^2 * 3*2 es aplicar un filtro sobre un canal. Hay que hacerlo tantas veces como canales de entrada para cada canal de salida. El +1 es por los bias
-    num_MACs = W * W * 3 * 3 * ((3+1)*num_filters + (num_filters+1)*num_filters*4)
+    num_MACs = W * W * 3 * 3 * ((3+1)*num_filters + (num_filters+1)*num_filters*(L-1))
     print("num_MACs:", num_MACs, "num_filters:", num_filters, "input_shape:", input_shape)
     model = Sequential()
     model.add(layers.Conv2D(num_filters, (3,3), padding='same', input_shape=input_shape, activation='relu'))
-    model.add(layers.Conv2D(num_filters, (3,3), padding='same', activation='relu'))
-    model.add(layers.Conv2D(num_filters, (3,3), padding='same', activation='relu'))
-    model.add(layers.Conv2D(num_filters, (3,3), padding='same', activation='relu'))
-    model.add(layers.Conv2D(num_filters, (3,3), padding='same', activation='relu'))
+    for _ in range(L-1):
+      model.add(layers.Conv2D(num_filters, (3,3), padding='same', activation='relu'))
     print(model.summary())
     #input("continue")
 
