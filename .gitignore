@@ -7,4 +7,5 @@
 **/compile_info/**
 *.tflite
 *.log
+**/checkpoints_pong_ppo/**
 libcoral/

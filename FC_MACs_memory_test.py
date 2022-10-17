@@ -26,7 +26,7 @@ def representative_data_gen():
     for input_value in np.array(np.random.random_sample([100,input_size]), dtype=np.float32):
         yield [input_value]
 
-def quantize(model_file_prefix, keras_model):       
+def quantize(model_file_prefix, keras_model):
     converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
@@ -34,7 +34,7 @@ def quantize(model_file_prefix, keras_model):
 
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]
     #converter.inference_input_type = tf.int8
-    converter.inference_output_type = tf.int8
+    #converter.inference_output_type = tf.int8
 
     tflite_model_quant = converter.convert()
     open(model_file_prefix + "_quant.tflite", "wb").write(tflite_model_quant)
@@ -75,9 +75,9 @@ for hidden_neurons in range(minN, maxN+1, stepN):
     num_MACs = hidden_neurons * (input_size + output_size + L * hidden_neurons)
     print("num_MACs:", num_MACs, "hidden_neurons:", hidden_neurons, "input_size:", input_size, "output_size:", output_size)
     model = Sequential()
-    model.add(layers.Dense(hidden_neurons, input_shape=(input_size,), activation='tanh', use_bias=True,bias_initializer='zeros'))
+    model.add(layers.Dense(hidden_neurons, input_shape=(input_size,), activation='tanh', use_bias=True, bias_initializer='zeros'))
     for _ in range(L-1):
-      model.add(layers.Dense(hidden_neurons, activation='tanh', use_bias=True,bias_initializer='zeros'))
+      model.add(layers.Dense(hidden_neurons, activation='tanh', use_bias=True, bias_initializer='zeros'))
     model.add(layers.Dense(output_size, use_bias=True, bias_initializer='zeros'))
 
     model_file_prefix = f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}"

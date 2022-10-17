@@ -7,6 +7,7 @@ import time
 import shelve
 import argparse
 import csv
+import tensorflow as tf
 from tensorflow import keras
 from ray import tune
 
@@ -20,7 +21,7 @@ def gpu_options(gpu_opt):
         os.environ["CUDA_VISIBLE_DEVICES"]="0"
         os.system('export "CUDA_VISIBLE_DEVICES"="0"')
         num_gpus = 1
-        
+
     elif(gpu_opt == 'gpu1'):
         # Set only GPU 1 as visible
         #tf.config.set_visible_devices(physical_devices[1], 'GPU')
@@ -36,51 +37,7 @@ def gpu_options(gpu_opt):
         os.environ["CUDA_VISIBLE_DEVICES"]="0,1"
         os.system('export "CUDA_VISIBLE_DEVICES"="0,1"')
         num_gpus=0
-    
     return num_gpus
-
-def get_config(model):
-    config = ppo.DEFAULT_CONFIG.copy()
-    if model == 2:
-        config['model']['dim'] = 168
-        config['model']['conv_filters'] = [[16, [16, 16], 8],[32, [4, 4], 2],[256, [11, 11], 1]]
-    elif model == 3:
-        config['model']['dim'] = 84
-        config['model']['conv_filters'] = [[4, [8, 8], 4],[4, [4, 4], 2], [4, [11, 11], 1]]
-    elif model == 4:
-        config['model']['dim'] = 168
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[32, [4, 4], 2],[32, [4, 4], 2], [256, [11, 11], 1]]
-    elif model == 5:
-        config['model']['dim'] = 252
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[32, [4, 4], 2], [32, [4, 4], 2], [256, [16, 16], 1]]
-    elif model == 6:
-        config['model']['dim'] = 168
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[32, [4, 4], 2],[256, [21, 21], 1]]
-    elif model == 7:
-        config['model']['dim'] = 84
-        config['model']['conv_filters'] = []
-        config['model']['conv_filters'].append([16, [8, 8], 4])
-        config['model']['conv_filters'].append([32, [4, 4], 2])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [11, 11], 1])
-    elif model == 8:
-        config['model']['dim'] = 84
-        config['model']['conv_filters'] = [[16,[8,8],4]]
-        config['model']['conv_filters'].append([256, [4, 4], 2])
-        for _ in range(20):
-          config['model']['conv_filters'].append([256, [4, 4], 1])
-        config['model']['conv_filters'].append([256, [11, 11], 1])
-    return config
 
 def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = True, restore = False, restore_dir = None):
     s = "{:3d} reward {:6.2f}/{:6.2f}/{:6.2f} len {:6.2f} learn_time_ms {:6.2f} total_train_time_s {:6.2f} saved {}"
@@ -143,19 +100,25 @@ def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = Tr
 
     return results
 
-def main():
+
+def convert_to_TFLite(model_file_prefix, keras_model):
+    converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
+    tflite_model = converter.convert()
+    open(model_file_prefix + ".tflite", "wb").write(tflite_model)
+    return tflite_model
+
+
+def main(hidden_neurons = 102, num_layers = 5):
 
     # Argument parser
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '-m', '--model', required=True, type=int, choices=[i for i in range(1,9)], help='Integer indicating the model to create. It must be an integer value between 1 and 6. Run python train_model.available_models() to see the description of available models.')
-    parser.add_argument(
         '-g', '--gpu', required=False, type = str, default='none', choices =['none','gpu0','gpu1','both'], help='GPU options (if available)')
     parser.add_argument(
-        '-d', '--driver-gpus', required = False, type=float, default = 0.0, help='Bumber of GPUs to asign to the driver. It can be a decimal number')
+        '-d', '--driver-gpus', required = False, type=float, default = 0.0, help='Number of GPUs to asign to the driver. It can be a decimal number')
     parser.add_argument(
-        '-w', '--workers', required = True, type=int, default=8, help='Number of rollout workers to create')
+        '-w', '--workers', required = False, type=int, default=4, help='Number of rollout workers to create')
     parser.add_argument(
         '-s', '--save-name', required=True, type=str, help='directory to save checkpoints (in ./checkpoints/...) and timing data (in ./training_results/...)')
     parser.add_argument(
@@ -185,7 +148,8 @@ def main():
         ray.init() 
 
     # Set agent config
-    config = get_config(args.model)   
+    config = config = ppo.DEFAULT_CONFIG.copy()
+    config["model"]["fcnet_hiddens"] =[hidden_neurons for _ in range(num_layers)]
     config['num_workers'] = args.workers
     config['num_gpus'] = args.driver_gpus
     config['num_gpus_per_worker'] = (num_gpus-config['num_gpus'])/args.workers
@@ -196,6 +160,16 @@ def main():
     print(policy.model.model_config)
     print(policy.model.base_model.summary())
     input("Continue...")
+
+    agent.get_policy().export_model("FC_MACs/example")
+    #with agent.get_policy().get_session().graph.as_default():
+    #   agent.get_policy().model.base_model.save("FC_MACs/example.h5")
+
+    converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model("FC_MACs/example", input_arrays=['default_policy/obs'], output_arrays=['default_policy/model/fc_out/BiasAdd'])
+    tflite_model = converter.convert()
+    open("example.tflite", "wb").write(tflite_model)
+    #convert_to_TFLite("FC_example", agent.get_policy().model.base_model)
+
 
     print("Configuracion del agente:\n\n" + str(config))
     print("\nConfiguracion del modelo del agente:\n\n" + str(config["model"]))
@@ -227,7 +201,7 @@ def main():
 
     if(not os.path.exists(actual_dir + '/ray_results/'+args.save_name)):
        os.mkdir(actual_dir + '/ray_results/'+args.save_name)
-    os.system("cp -r {}/* {}".format(ray_results_dir, actual_dir + '/ray_results/'+args.save_name))
+    os.system(f"cp -r {ray_results_dir}/* {actual_dir + '/ray_results/FC/'+args.save_name}")
     os.chdir(actual_dir)
 
     # Copy params.pkl to checkpoint dir for rollouts

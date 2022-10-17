@@ -26,11 +26,14 @@ print(config)
 config['num_gpus']=0
 config['num_gpus_per_worker'] = 0
 config['explore'] = False
-
+config.pop('record_env', None)
+config.pop('eager_max_retraces', None)
+config.pop('_disable_preprocessor_api', None)
+config.pop('vf_share_layers', None)
 agent = ppo.PPOTrainer(config, env='Pong-v0')
+print("Checkpoint dir", checkpoint_dir)
 agent.restore(checkpoint_dir)
 print(agent.get_policy().model.base_model.summary())
-print(checkpoint_dir, config_path)
 
 if(os.path.exists(export_name)):
   shutil.rmtree(export_name)
