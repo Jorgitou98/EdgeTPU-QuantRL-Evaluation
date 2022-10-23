@@ -8,4 +8,5 @@
 *.tflite
 *.log
 **/checkpoints_pong_ppo/**
+*.save
 libcoral/

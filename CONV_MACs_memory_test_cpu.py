@@ -33,7 +33,6 @@ maxF = args.maxF
 stepF = args.stepF
 steps = args.steps
 
-
 csv_results = open(f"CONV_MACs/results/cpu-minF{minF}-maxF{maxF}-stepF{stepF}.csv", "w")
 writer_results = csv.writer(csv_results, delimiter=',')
 writer_results.writerow(["Num filters", "# MACs", "Inference time"])
