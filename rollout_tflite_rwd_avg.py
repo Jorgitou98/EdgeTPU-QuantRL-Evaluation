@@ -133,7 +133,8 @@ def main(model = None, env_name="Pong-v0", episodes = None):
     this_episode += 1
     reward_avg += reward_episode
     print("Reward this episode", reward_episode)
-  reward_avg /= episodes
+  if num_episodes is not None and num_episodes > 0:
+    reward_avg /= num_episodes
   print("Reward avg:", reward_avg)
   return reward_avg
 
