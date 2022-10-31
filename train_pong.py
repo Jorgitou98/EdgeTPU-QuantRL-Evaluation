@@ -43,7 +43,7 @@ def get_config(model):
     config = ppo.DEFAULT_CONFIG.copy()
     if model == 2:
         config['model']['dim'] = 84
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[8, [4, 4], 2],[256, [11, 11], 1]]
+        config['model']['conv_filters'] = [[16, [32, 32], 8],[32, [16, 16], 2],[256, [11, 11], 1]]
     elif model == 3:
         config['model']['dim'] = 84
         config['model']['conv_filters'] = [[4, [8, 8], 4],[4, [4, 4], 2], [4, [11, 11], 1]]
