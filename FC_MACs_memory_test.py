@@ -12,8 +12,7 @@ import re
 import csv
 import argparse
 
-W = 48
-input_size = 3 * W * W
+input_size = 64
 output_size = 10
 
 def convert_to_TFLite(model_file_prefix, keras_model):
@@ -67,12 +66,12 @@ maxN = args.maxN
 stepN = args.stepN
 L = args.layers
 
-csv_results = open(f"FC_MACs/results/minN{minN}-maxN{maxN}-stepN{stepN}L{L}.csv", "w")
+csv_results = open(f"FC_MACs/results/minN{minN}-maxN{maxN}-stepN{stepN}-L{L}-I{input_size}.csv", "w")
 writer_results = csv.writer(csv_results, delimiter=',')
 writer_results.writerow(["Hidden neurons", "# MACs", "On chip mem used", "Off chip mem used", "Inference time"])
 
 for hidden_neurons in range(minN, maxN+1, stepN):
-    num_MACs = hidden_neurons * (input_size + output_size + L * hidden_neurons)
+    num_MACs = hidden_neurons * (input_size + output_size + (L-1) * hidden_neurons)
     print("num_MACs:", num_MACs, "hidden_neurons:", hidden_neurons, "input_size:", input_size, "output_size:", output_size)
     model = Sequential()
     model.add(layers.Dense(hidden_neurons, input_shape=(input_size,), activation='tanh', use_bias=True, bias_initializer='zeros'))
@@ -108,7 +107,7 @@ for hidden_neurons in range(minN, maxN+1, stepN):
     #move_tpu_log = f'mv N{hidden_neurons}-nMACs{num_MACs}_quant_edgetpu.log {model_file_prefix}_quant_edgetpu.log'
     #subprocess.Popen(move_tpu_log.split()).communicate()
 
-    inf_time = rollout_edge_tpu_basic.execute(model_path=f"{model_file_prefix}_quant_edgetpu.tflite", steps = 50)
+    inf_time = rollout_edge_tpu_basic.execute(model_path=f"{model_file_prefix}_quant_edgetpu.tflite", steps = 500)
     print("Tiempo de inferencia:", inf_time)
     #input("Continuar")
 
