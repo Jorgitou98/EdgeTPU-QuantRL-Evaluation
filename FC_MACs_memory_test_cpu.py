@@ -12,8 +12,7 @@ import re
 import csv
 import argparse
 
-W = 48
-input_size = 3 * W * W
+input_size = 64
 output_size = 10
 
 
@@ -43,7 +42,7 @@ writer_results = csv.writer(csv_results, delimiter=',')
 writer_results.writerow(["Num neuronas", "# MACs", "Inference time"])
 
 for num_neurons in range(minN, maxN+1, stepN):
-    num_MACs = num_neurons * (input_size + output_size + L * num_neurons)
+    num_MACs = num_neurons * (input_size + output_size + (L-1) * num_neurons)
     print("num_MACs:", num_MACs, "num_neurons:", num_neurons, "input_size:", input_size, "output_size:", output_size)
     model = Sequential()
     model.add(layers.Dense(num_neurons, input_shape=(input_size,), activation='tanh', use_bias=True, bias_initializer='zeros'))
