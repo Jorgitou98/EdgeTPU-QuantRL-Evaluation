@@ -28,6 +28,7 @@ parser.add_argument('--maxN', type=int, default=2025, help='Maximum number of ne
 parser.add_argument('--stepN', type=int, default=100, help='Step number of neurons for de experiment')
 parser.add_argument('--steps', type=int, default=100, help='Step per inference')
 parser.add_argument('--layers', type=int, default=100, help='Number of neural layers')
+parser.add_argument('--threads', type=int, default=8, help='Number of CPU threads in execeution')
 args = parser.parse_args()
 
 minN = args.minN
@@ -35,9 +36,10 @@ maxN = args.maxN
 stepN = args.stepN
 steps = args.steps
 L = args.layers
+threads = args.threads
 
 
-csv_results = open(f"FC_MACs/results/cpu-minN{minN}-maxN{maxN}-stepN{stepN}.csv", "w")
+csv_results = open(f"FC_MACs/results/cpu-minN{minN}-maxN{maxN}-stepN{stepN}-threads{threads}.csv", "w")
 writer_results = csv.writer(csv_results, delimiter=',')
 writer_results.writerow(["Num neuronas", "# MACs", "Inference time"])
 
@@ -53,6 +55,6 @@ for num_neurons in range(minN, maxN+1, stepN):
 
     model_file_prefix = f"FC_MACs/N{num_neurons}-nMACs{num_MACs}"
     tflite_model = convert_to_TFLite(model_file_prefix = model_file_prefix, keras_model = model)
-    inf_time = rollout_cpu_basic.execute(model_path=f"{model_file_prefix}.tflite", steps = steps)
+    inf_time = rollout_cpu_basic.execute(model_path=f"{model_file_prefix}.tflite", steps = steps, threads=threads)
     writer_results.writerow([num_neurons, num_MACs, inf_time])
 csv_results.close()

@@ -10,7 +10,7 @@ from contextlib import contextmanager
 import re
 import csv
 import argparse
-import rollout_edge_tpu_pipeline_batch_FC
+import rollout_pipeline_batch_FC
 
 input_size = 64
 output_size = 10
@@ -117,7 +117,7 @@ for hidden_neurons in range(minN, maxN+1, stepN):
     on_chip_mem_MB = []
     off_chip_mem_MB = []
     for num_segment in range(num_segments):
-      model_file_prefix = f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}_seg{num_segment}of{num_segments}"
+      model_file_prefix = f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}_seg{num_segment}_of_{num_segments}"
       tflite_model = convert_to_TFLite(model_file_prefix = model_file_prefix, keras_model = model_segments[num_segment])
       #interpreter = tf.lite.Interpreter(model_content=tflite_model)
       #interpreter.allocate_tensors()  # Needed before execution!
@@ -139,7 +139,9 @@ for hidden_neurons in range(minN, maxN+1, stepN):
       on_chip_mem_MB.append(memory_use(hidden_neurons, num_MACs, "On-chip memory used for caching model parameters:"))
       off_chip_mem_MB.append(memory_use(hidden_neurons, num_MACs, "Off-chip memory used for streaming uncached model parameters:"))
 
-    inf_time = rollout_edge_tpu_pipeline_batch_FC.execute(model_prefix=f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}", num_segments = num_segments, steps = steps, batch = batch)
+    inf_time = rollout_pipeline_batch_FC.execute(model_prefix=f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}", num_segments = num_segments, steps = steps, batch = batch)
+    #inf_time = rollout_edge_tpu_pipeline_batch.execute(model_prefix=f"FC_MACs/N{hidden_neurons}-nMACs{num_MACs}", num_segments = num_segments, steps= steps, batch_size= batch)
+
     print("Tiempo de inferencia:", inf_time)
     #input("Continuar")
 

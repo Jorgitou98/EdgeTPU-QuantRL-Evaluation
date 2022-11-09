@@ -1,7 +1,7 @@
 import argparse
 
 from PIL import Image
-
+from numpy import linalg as LA
 import tflite_runtime.interpreter as tflite
 import numpy as np
 import platform
@@ -47,9 +47,10 @@ def main(model_quant = None, model_dequant = None, env_name="Pong-v0", steps = N
 
 
   ## Getting distrib
-  trainer = PPOTrainer(env = env_name, config={"framework": "tf2", "num_workers": 0})
-  policy = trainer.get_policy()
-  dist_class = policy.dist_class
+  #trainer = PPOTrainer(env = env_name, config={"framework": "tf2", "num_workers": 0})
+  #trainer = PPOTrainer(env = env_name)
+  #policy = trainer.get_policy()
+  #dist_class = policy.dist_class
   #print(dist_class)
 
   interpreter_dequant = tflite.Interpreter(model_path=model_dequant)
@@ -81,11 +82,15 @@ def main(model_quant = None, model_dequant = None, env_name="Pong-v0", steps = N
   print('----INFERENCE TIME----')
   print('Note: The first inference on Edge cpu is slow because it includes',
         'loading the model into Edge cpu memory.')
-
-  diff_dec_perc = 0
+  rel_norm_acumm = 0
+  
+  seed = 0
+  done = True
   for step in range(num_steps):
-    env.seed(step)
-    image = env.reset()
+    if done:
+      env.seed(seed)
+      image = env.reset()
+      seed+=1
     image = prep.transform(image)
     image = image[np.newaxis, ...]
 
@@ -97,23 +102,14 @@ def main(model_quant = None, model_dequant = None, env_name="Pong-v0", steps = N
     output_data_dequant = interpreter_dequant.get_tensor(output_details_dequant[0]['index'])
     output_data_quant = interpreter_quant.get_tensor(output_details_quant[0]['index'])
     print("_"*50)
-    print("Output dequant:", output_data_dequant)
-    dequant_dec = np.argmax(output_data_dequant)
-    print("Movement:", dequant_dec)
-    print()
-    print("Output quant:", output_data_quant)
-    quant_decision = np.argmax(output_data_quant)
-    print("Movement:", quant_decision)
-    diff_decision = dequant_dec != quant_decision
-    print("Different decision:", diff_decision)
-    print("_"*50)
-    if diff_decision:
-      diff_dec_perc += 1
-
-  diff_dec_perc /= num_steps
-  diff_dec_perc *= 100
-  print("Percentage of different decision", diff_dec_perc)
-  return diff_dec_perc
+    print(output_data_dequant)
+    print(output_data_quant)
+    print(output_data_dequant - output_data_quant)
+    print(LA.norm(output_data_dequant - output_data_quant)/LA.norm(output_data_dequant))
+    rel_norm_acumm += LA.norm(output_data_dequant - output_data_quant)/LA.norm(output_data_dequant)
+    action = np.argmax(output_data_dequant[0])
+    image, _, done, _ = env.step(action)
+  return rel_norm_acumm/num_steps
 
 if __name__ == '__main__':
   main()

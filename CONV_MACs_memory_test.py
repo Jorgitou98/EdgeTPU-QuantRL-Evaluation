@@ -6,7 +6,7 @@ import numpy as np
 import subprocess
 import rollout_edge_tpu_basic
 import rollout_edge_tpu_pipeline_basic
-import rollout_edge_tpu_pipeline_batch
+import rollout_pipeline_batch_CONV
 import os
 import sys
 from contextlib import contextmanager
@@ -103,7 +103,7 @@ def test_edge_tpu(model_file_prefix, num_segments):
       #inf_time = rollout_edge_tpu_basic.execute(model_path=f"{model_file_prefix}_quant_edgetpu.tflite", steps = steps)
     #else:
       #inf_time = rollout_edge_tpu_pipeline_basic.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps)
-    inf_time = rollout_edge_tpu_pipeline_batch.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps, batch_size = batch_size)
+    inf_time = rollout_pipeline_batch_CONV.execute(model_prefix=f"{model_file_prefix}_quant", num_segments = num_segments, steps = steps, batch_size = batch_size)
     print(f"Inference time {num_segments} segments:", inf_time)
     return (inf_time, on_chip_mems_MB, off_chip_mems_MB)
 

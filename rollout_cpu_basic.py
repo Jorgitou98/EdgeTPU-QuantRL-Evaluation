@@ -4,8 +4,8 @@ import numpy as np
 import statistics
 import tensorflow as tf
 
-def execute(model_path, steps=2):
-  interpreter = tflite.Interpreter(model_path=model_path)
+def execute(model_path, threads, steps=2):
+  interpreter = tflite.Interpreter(model_path=model_path, num_threads=threads)
   interpreter.allocate_tensors()
   input_details = interpreter.get_input_details()[0]
   output_details = interpreter.get_output_details()[0]

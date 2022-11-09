@@ -26,14 +26,16 @@ parser.add_argument('--minF', type=int, default=2, help='Minimum number of filte
 parser.add_argument('--maxF', type=int, default=2025, help='Maximum number of filters for de experiment')
 parser.add_argument('--stepF', type=int, default=100, help='Step number of filters for de experiment')
 parser.add_argument('--steps', type=int, default=100, help='Step per inference')
+parser.add_argument('--threads', type=int, default=8, help='Number of execution threads')
 args = parser.parse_args()
 
 minF = args.minF
 maxF = args.maxF
 stepF = args.stepF
 steps = args.steps
+threads = args.threads
 
-csv_results = open(f"CONV_MACs/results/cpu-minF{minF}-maxF{maxF}-stepF{stepF}.csv", "w")
+csv_results = open(f"CONV_MACs/results/cpu-minF{minF}-maxF{maxF}-stepF{stepF}-threads{threads}.csv", "w")
 writer_results = csv.writer(csv_results, delimiter=',')
 writer_results.writerow(["Num filters", "# MACs", "Inference time"])
 
@@ -52,7 +54,7 @@ for num_filters in range(minF, maxF+1, stepF):
     model_file_prefix = f"CONV_MACs/N{num_filters}-nMACs{num_MACs}"
     tflite_model = convert_to_TFLite(model_file_prefix = model_file_prefix, keras_model = model)
     
-    inf_time = rollout_cpu_basic.execute(model_path=f"{model_file_prefix}.tflite", steps = steps)
+    inf_time = rollout_cpu_basic.execute(model_path=f"{model_file_prefix}.tflite", steps = steps, threads = threads)
     
     writer_results.writerow([num_filters, num_MACs, inf_time])
 csv_results.close()
