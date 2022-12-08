@@ -83,7 +83,7 @@ def main(model_quant = None, model_dequant = None, env_name="Pong-v0", steps = N
   print('Note: The first inference on Edge cpu is slow because it includes',
         'loading the model into Edge cpu memory.')
   rel_norm_acumm = 0
-  
+  diff_actions = 0
   seed = 0
   done = True
   for step in range(num_steps):
@@ -104,12 +104,14 @@ def main(model_quant = None, model_dequant = None, env_name="Pong-v0", steps = N
     print("_"*50)
     print(output_data_dequant)
     print(output_data_quant)
+    if np.argmax(output_data_dequant) != np.argmax(output_data_quant):
+       diff_actions += 1
     print(output_data_dequant - output_data_quant)
     print(LA.norm(output_data_dequant - output_data_quant)/LA.norm(output_data_dequant))
     rel_norm_acumm += LA.norm(output_data_dequant - output_data_quant)/LA.norm(output_data_dequant)
     action = np.argmax(output_data_dequant[0])
     image, _, done, _ = env.step(action)
-  return rel_norm_acumm/num_steps
+  return rel_norm_acumm/num_steps, diff_actions/num_steps*100
 
 if __name__ == '__main__':
   main()

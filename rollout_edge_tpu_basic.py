@@ -18,7 +18,10 @@ def execute(model_path, steps=2):
   total_time_ms = 0
   times = []
   for i in range(steps):
-    interpreter.set_tensor(input_details['index'], tf.constant(1., shape=input_details['shape']))
+    if input_details['dtype'] == np.float32:
+      interpreter.set_tensor(input_details['index'], tf.constant(1., shape=input_details['shape']))
+    elif input_details['dtype'] == np.int8:
+      interpreter.set_tensor(input_details['index'], tf.constant(1, dtype=np.int8, shape=input_details['shape']))
     start = time.perf_counter()
     interpreter.invoke()
     inference_time = (time.perf_counter() - start) * 1000

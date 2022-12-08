@@ -37,7 +37,6 @@ def execute(model_prefix, num_segments, steps=2, batch=1):
   def segment_inference(num_segment, batch):
     input_details = interpreters[num_segment].get_input_details()
     output_details = interpreters[num_segment].get_output_details()
-    input_details[0]["dtype"] = np.int8
     for _ in range(batch):
       input_val = queues[num_segment].get()
       print(input_details[0], input_val.dtype)

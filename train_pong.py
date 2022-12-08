@@ -1,5 +1,6 @@
 import ray
 import ray.rllib.agents.ppo as ppo
+import ray.rllib.agents.dqn as dqn
 import json, os, shutil, sys
 import gym
 import pprint
@@ -39,8 +40,11 @@ def gpu_options(gpu_opt):
     
     return num_gpus
 
-def get_config(model):
-    config = ppo.DEFAULT_CONFIG.copy()
+def get_config(model, algorithm):
+    if algorithm == "ppo":
+      config = ppo.DEFAULT_CONFIG.copy()
+    elif algorithm == "dqn":
+      config = dqn.DEFAULT_CONFIG.copy()
     if model == 2:
         config['model']['dim'] = 84
         config['model']['conv_filters'] = [[16, [8, 8], 4],[8, [4, 4], 2],[256, [11, 11], 1]]
@@ -167,6 +171,9 @@ def main():
     parser.add_argument(
         '-r', '--restore-dir', required = False, type =str, default=None, help='Checkpoint directory to restore model from it.'
     )
+    parser.add_argument(
+        '-algo', '--algorithm', required = False, type =str, default="ppo", help='Training algorithm.'
+    )
     args = parser.parse_args()
 
     # execute only in a set of CPUs
@@ -185,13 +192,17 @@ def main():
         ray.init() 
 
     # Set agent config
-    config = get_config(args.model)   
+    config = get_config(args.model, args.algorithm)   
     config['num_workers'] = args.workers
     config['num_gpus'] = args.driver_gpus
     config['num_gpus_per_worker'] = (num_gpus-config['num_gpus'])/args.workers
 
     # Create agent and show info
-    agent = ppo.PPOTrainer(config, env='Pong-v0')
+    if args.algorithm == "ppo":
+      agent = ppo.PPOTrainer(config, env='Pong-v0')
+    elif args.algorithm == "dqn":
+      agent = dqn.DQNTrainer(config, env='Pong-v0')
+
     policy=agent.get_policy()
     print(policy.model.model_config)
     print(policy.model.base_model.summary())
