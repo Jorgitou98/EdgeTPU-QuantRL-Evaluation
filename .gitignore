@@ -9,4 +9,5 @@
 *.log
 **/checkpoints_pong_ppo/**
 *.save
+**.ipynb_checkpoints**
 libcoral/
