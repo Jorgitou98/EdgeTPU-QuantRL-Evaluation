@@ -11,7 +11,7 @@ Este repositorio contiene los *scripts* utilizados para diversos experimentos de
 
 # Requerimientos para utilizar los *scripts*
 
-Los *scripts* se han ejecutado utilizando la versión de Python 3.8.12, pero deberían funcionar  con versiones >= 3.8. Además, es necesario instalar diversas librerías que se indican a continuación (se han utilizado en las versiones indicadas aunque muy probablemente también funcionen con versiones posteriores):
+Los *scripts* se han ejecutado utilizando la versión de Python 3.8.12, pero deberían funcionar con versiones >= 3.8. Además, es necesario instalar diversas librerías que se indican a continuación (se han utilizado en las versiones indicadas aunque muy probablemente también funcionen con versiones posteriores):
 
  - `pycoral 2.0.0`
  - `tensorflow 2.7.0`
@@ -39,6 +39,6 @@ El *script* [`CONV_MACs_memory_test.py`](https://github.com/Jorgitou98/EdgeTPU-Q
 
 A continuación se muestra un ejemplo de ejecución del *script* correspondiente al experimento con perfilado y *batch* de tamaño 50 cuyos resultados se exponen en la memoria del trabajo:
 
-    $ python CONV_MACs_memory_test.py --minF 32 --maxF 702 --stepF 10 --layers 5 --segements 5 --segements-list 1,2,3,4 --batch-size 50 --profile-partition True
+    $ python CONV_MACs_memory_test.py --minF 32 --maxF 702 --stepF 10 --layers 5 --segements 5 --segments-list 1,2,3,4 --batch-size 50 --profile-partition True
 
 El *script* muestra diversos mensajes por pantalla con los tiempos que va midiendo de cada modelo y reportes de compilación. Además, genera un fichero de salida `CONV_MACs/results/minF{minF}-maxF{maxF}-stepF{stepF}-seg{num_segments}-profiling{profile_partition}.csv` con una fila por cada modelo que contiene el número de filtros de cada capa, el número de operaciones MACs, el uso de memoria interna de la TPU en MiB, el uso de memoria externa en MiB (memoria del *host*)  y el tiempo medio de inferencia en milisegundos. 
