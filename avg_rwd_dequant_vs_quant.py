@@ -14,19 +14,19 @@ dir_files = os.listdir(dir_checkpoints)
 checkpoints = list(filter(lambda name: name.startswith("checkpoint_"), dir_files))
 checkpoints = sorted(checkpoints)
 
-csv_results_dequant = open(f"{dir_checkpoints}/results/results_dequant_250ep.csv", "w")
+csv_results_dequant = open(f"{dir_checkpoints}/results/results_dequant_{num_episodes}ep.csv", "w")
 writer_results_dequant = csv.writer(csv_results_dequant, delimiter=',')
 writer_results_dequant.writerow(["Num iters", "Rwd avg"])
 csv_results_dequant.close()
 
-csv_results_quant = open(f"{dir_checkpoints}/results/results_quant_250ep.csv", "w")
+csv_results_quant = open(f"{dir_checkpoints}/results/results_quant_{num_episodes}ep.csv", "w")
 writer_results_quant = csv.writer(csv_results_quant, delimiter=',')
 writer_results_quant.writerow(["Num iters", "Rwd avg"])
 csv_results_quant.close()
 
-csv_results_dequant = open(f"{dir_checkpoints}/results/results_dequant_250ep.csv", "a", buffering=1)
+csv_results_dequant = open(f"{dir_checkpoints}/results/results_dequant_{num_episodes}ep.csv", "a", buffering=1)
 writer_results_dequant = csv.writer(csv_results_dequant, delimiter=',')
-csv_results_quant = open(f"{dir_checkpoints}/results/results_quant_250ep.csv", "a", buffering=1)
+csv_results_quant = open(f"{dir_checkpoints}/results/results_quant_{num_episodes}ep.csv", "a", buffering=1)
 writer_results_quant = csv.writer(csv_results_quant, delimiter=',')
 
 for checkpoint in checkpoints:
