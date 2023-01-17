@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dir_checkpoints', required = True, help='Path to checkpoints directory')
 args = parser.parse_args()
 
-num_episodes = 250
+num_episodes = 500
 dir_checkpoints = args.dir_checkpoints
 dir_files = os.listdir(dir_checkpoints)
 checkpoints = list(filter(lambda name: name.startswith("checkpoint_"), dir_files))

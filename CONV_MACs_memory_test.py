@@ -17,6 +17,28 @@ import argparse
 W = 64
 input_shape = (W, W, 3)
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--minF', type=int, default=2, help='Minimum number of filters for de experiment')
+parser.add_argument('--maxF', type=int, default=2025, help='Maximum number of filters for de experiment')
+parser.add_argument('--stepF', type=int, default=100, help='Step number of filters for de experiment')
+parser.add_argument('--steps', type=int, default=100, help='Step per inference')
+parser.add_argument('--layers', type=int, default=5, help='Number of convolutional layers.')
+parser.add_argument('--segments-list', nargs='+', type=int, default=1, help='List with number of segments for test.')
+parser.add_argument('--batch-size', type=int, default=1, help='Batch size for execution execution.')
+parser.add_argument('--profile-partition', type=bool, default=False, help='Flag for pipeline segmentation using profiling')
+parser.add_argument('--profiling-diff-threshold', type=int, default=500000, help='Threshold between the slowest and fastest segment in ns')
+args = parser.parse_args()
+
+minF = args.minF
+maxF = args.maxF
+stepF = args.stepF
+steps = args.steps
+L = args.layers
+segments_list = args.segments_list
+batch_size = args.batch_size
+profile_partition = args.profile_partition
+profiling_diff_threshold = args.profiling_diff_threshold
+
 def convert_to_TFLite(model_file_prefix, keras_model):
     converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
     tflite_model = converter.convert()
@@ -61,28 +83,6 @@ def memory_use(line_init, num_segments):
   print(memory_uses)
   #input("continuar")
   return memory_uses
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--minF', type=int, default=2, help='Minimum number of filters for de experiment')
-parser.add_argument('--maxF', type=int, default=2025, help='Maximum number of filters for de experiment')
-parser.add_argument('--stepF', type=int, default=100, help='Step number of filters for de experiment')
-parser.add_argument('--steps', type=int, default=100, help='Step per inference')
-parser.add_argument('--layers', type=int, default=5, help='Number of convolutional layers.')
-parser.add_argument('--segments-list', nargs='+', type=int, default=1, help='List with number of segments for test.')
-parser.add_argument('--batch-size', type=int, default=1, help='Batch size for execution execution.')
-parser.add_argument('--profile-partition', type=bool, default=False, help='Flag for pipeline segmentation using profiling')
-parser.add_argument('--profiling-diff-threshold', type=int, default=500000, help='Threshold between the slowest and fastest segment in ns')
-args = parser.parse_args()
-
-minF = args.minF
-maxF = args.maxF
-stepF = args.stepF
-steps = args.steps
-L = args.layers
-segments_list = args.segments_list
-batch_size = args.batch_size
-profile_partition = args.profile_partition
-profiling_diff_threshold = args.profiling_diff_threshold
 
 def test_edge_tpu(model_file_prefix, num_segments):
     orig_stdout = os.dup(sys.stdout.fileno())

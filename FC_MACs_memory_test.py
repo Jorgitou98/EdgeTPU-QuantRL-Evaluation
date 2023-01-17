@@ -15,6 +15,19 @@ import argparse
 input_size = 64
 output_size = 10
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--minN', type=int, default=2, help='Minimum number of neurons for de experiment')
+parser.add_argument('--maxN', type=int, default=2025, help='Maximum number of neurons for de experiment')
+parser.add_argument('--stepN', type=int, default=100, help='Step number of neurons for de experiment')
+parser.add_argument('--layers', type=int, default=1, help='Step number of neurons for de experiment')
+
+args = parser.parse_args()
+
+minN = args.minN
+maxN = args.maxN
+stepN = args.stepN
+L = args.layers
+
 def convert_to_TFLite(model_file_prefix, keras_model):
     converter = tf.lite.TFLiteConverter.from_keras_model(keras_model)
     tflite_model = converter.convert()
@@ -52,19 +65,6 @@ def memory_use(hidden_neurons, num_MACs, line_init):
   elif mem_magnitude == "B":
     mem_MB /= (1024 * 1024)
   return mem_MB
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--minN', type=int, default=2, help='Minimum number of neurons for de experiment')
-parser.add_argument('--maxN', type=int, default=2025, help='Maximum number of neurons for de experiment')
-parser.add_argument('--stepN', type=int, default=100, help='Step number of neurons for de experiment')
-parser.add_argument('--layers', type=int, default=1, help='Step number of neurons for de experiment')
-
-args = parser.parse_args()
-
-minN = args.minN
-maxN = args.maxN
-stepN = args.stepN
-L = args.layers
 
 csv_results = open(f"FC_MACs/results/minN{minN}-maxN{maxN}-stepN{stepN}-L{L}-I{input_size}.csv", "w")
 writer_results = csv.writer(csv_results, delimiter=',')

@@ -1,2 +1,0 @@
-n,episode_reward_min,episode_reward_mean,episode_reward_max,episode_len_mean,learn_time_ms,total_train_time_s
-1,-21.0,-21.0,-21.0,1017.5,6615.115,14.40757131576538

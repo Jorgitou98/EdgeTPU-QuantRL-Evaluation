@@ -14,7 +14,6 @@ checkpoint_dir=sys.argv[1]
 export_name = sys.argv[2]
 
 config = ppo.DEFAULT_CONFIG.copy()
-#print(config)
 
 config_dir = os.path.dirname(checkpoint_dir)
 config_path = os.path.join(config_dir, "params.pkl")
@@ -30,6 +29,7 @@ config.pop('record_env', None)
 config.pop('eager_max_retraces', None)
 config.pop('_disable_preprocessor_api', None)
 config.pop('vf_share_layers', None)
+
 agent = ppo.PPOTrainer(config, env='Pong-v0')
 print("Checkpoint dir", checkpoint_dir)
 agent.restore(checkpoint_dir)
