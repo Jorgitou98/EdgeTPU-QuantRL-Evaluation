@@ -51,42 +51,9 @@ def get_config(model, algorithm):
     elif model == 3:
         config['model']['dim'] = 84
         config['model']['conv_filters'] = [[4, [8, 8], 4],[4, [4, 4], 2], [4, [11, 11], 1]]
-    elif model == 4:
-        config['model']['dim'] = 168
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[32, [4, 4], 2],[32, [4, 4], 2], [256, [11, 11], 1]]
-    elif model == 5:
-        config['model']['dim'] = 252
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[32, [4, 4], 2], [32, [4, 4], 2], [256, [16, 16], 1]]
-    elif model == 6:
-        config['model']['dim'] = 168
-        config['model']['conv_filters'] = [[16, [8, 8], 4],[32, [4, 4], 2],[256, [21, 21], 1]]
-    elif model == 7:
-        config['model']['dim'] = 84
-        config['model']['conv_filters'] = []
-        config['model']['conv_filters'].append([16, [8, 8], 4])
-        config['model']['conv_filters'].append([32, [4, 4], 2])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [4, 4], 1])
-        config['model']['conv_filters'].append([32, [11, 11], 1])
-    elif model == 8:
-        config['model']['dim'] = 84
-        config['model']['conv_filters'] = [[16,[8,8],4]]
-        config['model']['conv_filters'].append([256, [4, 4], 2])
-        for _ in range(20):
-          config['model']['conv_filters'].append([256, [4, 4], 1])
-        config['model']['conv_filters'].append([256, [11, 11], 1])
     return config
 
-def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = True, restore = False, restore_dir = None):
+def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = True, restore = False, restore_dir = None, period_checkpoint = 50):
     s = "{:3d} reward {:6.2f}/{:6.2f}/{:6.2f} len {:6.2f} learn_time_ms {:6.2f} total_train_time_s {:6.2f} saved {}"
     if(restore):
         if restore_dir == None:
@@ -115,7 +82,7 @@ def full_train(checkpoint_root, agent, n_iter, save_file, n_ini = 0, header = Tr
         episode_data.append(episode)
         episode_json.append(json.dumps(episode))
         # Save checkpoint after training every 100 iters
-        if n % 50 == 0:
+        if n % period_checkpoint == 0:
           file_name = agent.save(checkpoint_root)
         print(s.format(
         n_ini + n + 1,
@@ -172,7 +139,7 @@ def main():
         '-r', '--restore-dir', required = False, type =str, default=None, help='Checkpoint directory to restore model from it.'
     )
     parser.add_argument(
-        '-algo', '--algorithm', required = False, type =str, default="ppo", help='Training algorithm.'
+        '-p', '--period-checkpoint', required = False, type =int, default=50, help='Period of iters for checkpoint save'
     )
     args = parser.parse_args()
 
@@ -219,11 +186,11 @@ def main():
         # and we set as n_ini the value of X
         n_ini=int(args.restore_dir.split('/')[len(args.restore_dir.split('/'))-1].split('-')[1])
         t0 = time.time()
-        full_train(checkpoint_root, agent, args.iters, save_file, n_ini = n_ini, header=False, restore = True, restore_dir=args.restore_dir)
+        full_train(checkpoint_root, agent, args.iters, save_file, n_ini = n_ini, header=False, restore = True, restore_dir=args.restore_dir, period_checkpoint = args.period_checkpoint)
         t1 = time.time()-t0
     else:
         t0 = time.time()
-        full_train(checkpoint_root, agent, args.iters, save_file)
+        full_train(checkpoint_root, agent, args.iters, save_file, period_checkpoint = args.period_checkpoint)
         t1 = time.time()-t0
     print("Total time for the " + str(args.iters) + " training iterations: " + str(t1))
 
